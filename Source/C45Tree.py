@@ -11,6 +11,7 @@ class TreeNode:
         self.threshold = None     #This is the trained threshold of the feature to split on
         self.leftChild = None
         self.rightChild = None
+        self.children = []
         self.parent = parent
 
     def c45Train(self):
@@ -26,8 +27,9 @@ class TreeNode:
             labels = self.dataSet.getNumOfInstanceForLabel()
             bestLabel = None
             counts = 0
-
-            for key in labels:
+            print('there are no more features in the feature list')
+            for key in labels: # TODO labes are dictionaries, there may be sth incorrect
+                print(key)
                 if labels[key] > counts:
                     bestLabel = key
                     counts = labels[key]
@@ -50,54 +52,55 @@ class TreeNode:
         Fvalue = int(np.ceil(np.sqrt(len(self.featureList))))
         # index of featureSubset
         featureSubset = random.sample(self.featureList, Fvalue)
-
+        print('***************','\n',"featureSubset: ",featureSubset)
         for featureIndex in featureSubset:
-            #Calculate the threshold to use for that feature
-            threshold = self.dataSet.betterThreshold(featureIndex)  # TODO
+            maxGain = 0
+            Goodchildren = []
+            childrenList = self.dataSet.splitBy(featureIndex)
+            H = self.dataSet.getEntropy()
+            newEntropy = 0
+            for child in childrenList:
+               entropy = child.getEntropy()
+               newEntropy = newEntropy + (child.getDataLength()/currentLength)*child.getEntropy()
+            Gain = H - newEntropy
+            # TODO Gain/splitInfo
+            print("Gain:",Gain)
+            if Gain > maxGain:
+                maxGain = Gain
+                bestfeatureIndex = featureIndex
+                Goodchildren = childrenList
 
-            (leftSet, rightSet) = self.dataSet.splitOn(featureIndex, threshold)
 
-            leftEntropy = leftSet.getEntropy()
-            rightEntropy = rightSet.getEntropy()
-            #Weighted entropy for this split
-            newEntropy = (leftSet.getLength() / currentLength) * leftEntropy + (rightSet.getLength() / currentLength) * rightEntropy
-            #Calculate the gain for this test
-            newIG = currentEntropy - newEntropy
-
-            if(newIG > infoGain):
-                #Update the best stuff
-                infoGain = newIG
-                bestLeft = leftSet
-                bestRight = rightSet
-                bestFeature = featureIndex
-                bestThreshold = threshold
-
-        newFeatureList = list(self.featureList)
-        newFeatureList.remove(bestFeature)
-
-        #Another base case, if there are no good features to split on
-        if bestLeft.getLength() == 0 or bestRight.getLength() == 0:
-            labels = self.dataSet.getLabelStatistics()
+        if len(Goodchildren) == 0: # TODO
+            print("len(Goodchildren) == 0")
+            dic = self.dataSet.getNumOfInstanceForLabel() # TODO
             bestLabel = None
             mostTimes = 0
 
-            for key in labels:
-                if labels[key] > mostTimes:
-                    bestLabel = key
-                    mostTimes = labels[key]
+            for label_ in dic:
+                print("leaf, key:", label_)
+                if dic[label_] > mostTimes:
+                    bestLabel = label_
+                    mostTimes = dic[label_]
             #Make the leaf node with the best label
             leaf = LeafNode(bestLabel)
             return leaf
+        else:
+            newFeatureList = list(self.featureList)
+            newFeatureList.remove(bestfeatureIndex)  # TODO when it does not find bestfeatureIndex
+            print('newFeatureList: ',newFeatureList)
 
-        self.threshold = bestThreshold
-        self.featureNumber = bestFeature
-
-        leftChild = TreeNode(bestLeft, newFeatureList, self)
-        rightChild = TreeNode(bestRight, newFeatureList, self)
-
-        self.leftChild = leftChild.c45Train()
-        self.rightChild = rightChild.c45Train()
-
+        #self.featureNumber = bestFeature
+        #
+        # leftChild = TreeNode(bestLeft, newFeatureList, self)
+        # rightChild = TreeNode(bestRight, newFeatureList, self)
+        #
+        # self.leftChild = leftChild.c45Train()
+        # self.rightChild = rightChild.c45Train()
+        for child in Goodchildren:
+            self.children.append(TreeNode(child,newFeatureList,self))
+        for child in self.children:
+            child.c45Train()
         return self
         
     def __str__(self):

@@ -35,6 +35,7 @@ class Data(object):
     def __init__(self, name=None,data=None):
         """
         :param name: name can be DataFrame, None, name of a cvs file
+                data: a list of samples
         :return:
         """
         self.df = pd.DataFrame
@@ -44,8 +45,11 @@ class Data(object):
             self.Data = data
         self.statistics = {}
         self.entropy = None
+
+        # TODO now, I feel it is chaos
         if type(name)==pd.DataFrame:
             self.df = name
+            self.DataName = 'temp_name'
         else:
             if name == None:
                 name = input("Type in the data set file name then continue, {bscale, car, kr-vs-kp}")
@@ -78,8 +82,8 @@ class Data(object):
         #TODO if self.statistics is not empty
         labelToNum ={}
         for instance in self.Data:
-            label = instance.getLabel
-            if label in labelToNum:
+            label = instance.getLabel()
+            if label in labelToNum.keys():
                 labelToNum[label] += 1
             else:
                 labelToNum[label] = 1
@@ -105,11 +109,9 @@ class Data(object):
             return self.entropy
 
         dic = self.getNumOfInstanceForLabel()
-
         #assuming all the data is labeled
         total = len(self.Data)
         entropy = 0.0
-
         for label in dic:
             #Calculate the probability of the key
             pOfclass = float(dic[label]) / float(total)
@@ -120,14 +122,24 @@ class Data(object):
         self.entropy = entropy
         return self.entropy
 
+    def splitBy(self, featureIndex):
+        children_value = []
+        children = {} # children[children_value,[sample_list]]
+        children_obj = []
+        for sample in self.Data:
+            value = sample.getValueAtIndex(featureIndex)
+            if value not in children_value:
+                children_value.append(value)
+                children[value] = [sample]
+            else:
+                children[value].append(sample)
+        children_size = len(children)
+        for i in range(children_size):
+            value = list(children.keys())[i]
+            children_obj.append(Data('children' + str(i),children[value]))
+            # TODO need to stash value to particular children
+        return children_obj
     def splitOn(self, attributeNumber, threshold):
-        '''
-        Splits this dataset instance into two subsets
-        based off of the threshold for the attributeNumber.
-
-        Returns a 2 tuple the less-than-or-equal-to set
-        and the greater-than set
-        '''
 
         left = []
         right = []
@@ -151,6 +163,18 @@ class Data(object):
         for samp in self.Data:
             runningTotal = runningTotal + samp.getValueAtIndex(feature)
         return float(runningTotal) / totalN
+
+    def getSamplesOfFeature(self,featureIndex):
+        children_value = []
+        children = {} # children[children_value,[sample_list]]
+        for sample in self.Data:
+            value = sample.getValueAtIndex(featureIndex)
+            if value not in children_value:
+                children_value.append(value)
+                children[value] = [sample]
+            else:
+                children[value].append(sample)
+        return children
 
     def getDataLength(self):
         return len(self.Data)
