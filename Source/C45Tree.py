@@ -8,23 +8,23 @@ class TreeNode:
         self.dataSet = dataSet
         self.featureList = featureList
 
-        self.threshold = None     #This is the trained threshold of the feature to split on
-        self.leftChild = None  # left and right child is used for continuous attributes
-        self.rightChild = None
-
         self.AttrValue = [] # (featureNumber,value) categories are corresponding to threshold
         self.children = [] # the list of TreeNodes
         self.parent = parent
 
+        self.threshold = None     #This is the trained threshold of the feature to split on
+        self.leftChild = None  # left and right child is used for continuous attributes
+        self.rightChild = None
+
+
+
     def c45Train(self):
+        print('***************','\n')
         if(self.dataSet.isPure()):
-            #gets the label of the first data instance and makes a leaf node
-            #classifying it. 
             label = self.dataSet.getSamples()[0].getLabel()
             leaf = LeafNode(label)
             print("this node is Pure: ",label)
             return leaf
-        #If there are no more features in the feature list
         if len(self.featureList) == 0:  # TODO It Seems never get there
             labels = self.dataSet.getNumOfInstanceForLabel()
             bestLabel = None
@@ -39,7 +39,7 @@ class TreeNode:
             leaf = LeafNode(bestLabel)
             return leaf
 
-        currentEntropy = self.dataSet.getEntropy()  # done
+        #currentEntropy = self.dataSet.getEntropy()  # done
         currentLength = self.dataSet.getDataLength() # instance size
 
         #TODO F will be a parameter for randome forest
@@ -47,14 +47,14 @@ class TreeNode:
         Fvalue = len(self.featureList)
 
         featureSubset = random.sample(self.featureList, Fvalue)
-        print('***************','\n',"featureSubset: ",featureSubset)
+        print("featureSubset: ",featureSubset)
         maxGain = -1 * float("inf")
+        H = self.dataSet.getEntropy()
+        Goodchildren_dataSet = []
         for featureIndex in featureSubset:
-            Goodchildren_dataSet = []
-            childrenList_dataSet = self.dataSet.splitBy(featureIndex)
-
-            H = self.dataSet.getEntropy()
             newEntropy = 0
+            childrenList_dataSet = self.dataSet.splitBy(featureIndex)
+            print("childrenList_dataSet: ",featureIndex,len(childrenList_dataSet))
 
             for child in childrenList_dataSet:
                newEntropy = newEntropy + (child.getDataLength()/currentLength)*child.getEntropy()
@@ -65,7 +65,7 @@ class TreeNode:
                 maxGain = Gain
                 bestfeatureIndex = featureIndex
                 Goodchildren_dataSet = childrenList_dataSet
-
+        print("bestfeatureIndex",bestfeatureIndex,"Goodchildren_dataSet",Goodchildren_dataSet)
 
         if len(Goodchildren_dataSet) == 0: # TODO
             print("len(Goodchildren_dataSet) == 0")
@@ -118,17 +118,18 @@ class TreeNode:
         #             #print("match index value pair")
         #             return child.classify(sample)
         for i in range(len(self.children)):
-            if self.children[i].getCategory() == 'leaf':
+            if self.children[i].getAttrValue() == 'leaf':
                 print("Got leaf")
                 return self.children[i].classify(sample)
             else:
                 index = self.featureNumber
-                value = self.AttrValue[i]
+                value = self.AttrValue[i][1]
+                print("Not leaf,index and value",index,value)
                 if sample.getValueAtIndex(index=index) == value:
                     #print("match index value pair")
                     return self.children[i].classify(sample)
 
-    def getCategory(self):
+    def getAttrValue(self):
         return self.AttrValue
 
     def setCategory(self,category):
@@ -147,7 +148,7 @@ class LeafNode:
     def __init__(self, classification):
         self.classification = classification
 
-    def getCategory(self):
+    def getAttrValue(self):
         return 'leaf'
 
     def classify(self, sample):

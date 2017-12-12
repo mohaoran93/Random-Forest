@@ -5,19 +5,40 @@ import numpy as np
 
 # Split data set
 df = pd.read_csv('./Data/car.csv')
+# df = pd.read_csv('./Data/tic-tac-toe.csv')
+# df = pd.read_csv('./Data/kr-vs-kp.csv')
 msk = np.random.rand(len(df)) < 0.8
 train_data = df[msk]
 test_data = df[~msk]
 
 train_data = Data(train_data)
 test_data = Data(test_data)
-#size,dic = sample.getAttrOf()
-
 # train
 
 train_data.addSampleFromDf()
+test_data.addSampleFromDf()
+
 Tree = C45Tree(train_data)
+print("===Train===")
 Tree.train()
+print("===Done===")
+
+print("\n,Test")
+
+T = 0
+F = 0
+for sample in test_data.getSamples():
+    #if sample.getLabel() != 'unacc':
+    print("_Start_")
+    classified = Tree.classify(sample)
+    print("Compare: ",sample.getLabel(), classified)
+    if sample.getLabel() == classified:
+        T = T+1
+    else:
+        F = F+1
+    print("_End_")
+print(T/(T+F))
+
 # experiments part
 
 
