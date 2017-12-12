@@ -16,11 +16,6 @@ class sample(object):
         self.lable = lable
 
     def splitLeft(self, attributeNumber, threshold):
-        '''
-        Returns true if the sample is less-than-or-equal-to
-        the threshold for that attribute number.
-        '''
-
         if self.features[attributeNumber] <= threshold:
             return True
         return False
@@ -32,20 +27,20 @@ class sample(object):
         return self.features
 class Data(object):
 
-    def __init__(self, name=None,data=None):
+    def __init__(self, name=None,data=None,index_value_tuple=None):
         """
         :param name: name can be DataFrame, None, name of a cvs file
                 data: a list of samples
         :return:
         """
+        self.index_value_tuple = index_value_tuple
         self.df = pd.DataFrame
+        self.statistics = {}
+        self.entropy = None
         if data == None:
             self.Data = [] # data is a list of samples
         else:
             self.Data = data
-        self.statistics = {}
-        self.entropy = None
-
         # TODO now, I feel it is chaos
         if type(name)==pd.DataFrame:
             self.df = name
@@ -74,6 +69,10 @@ class Data(object):
 
     def isPure(self):
         return self.count() <= 1
+    def get_index_value_tuple(self):
+        return self.index_value_tuple
+    def getFirstSample(self):
+        return self.Data[0]
     def getNumOfInstanceForLabel(self):
         """
 
@@ -123,12 +122,17 @@ class Data(object):
         return self.entropy
 
     def splitBy(self, featureIndex):
+        '''
+        :param featureIndex:
+        :return: a list of Data, each element has the same value on this featureIndex
+        '''
         children_value = []
         children = {} # children[children_value,[sample_list]]
-        children_obj = []
+        children_obj = [] # list of Data samples
         for sample in self.Data:
             value = sample.getValueAtIndex(featureIndex)
-            if value not in children_value:
+            #if value not in children_value:
+            if value not in children.keys():
                 children_value.append(value)
                 children[value] = [sample]
             else:
@@ -136,7 +140,7 @@ class Data(object):
         children_size = len(children)
         for i in range(children_size):
             value = list(children.keys())[i]
-            children_obj.append(Data('children' + str(i),children[value]))
+            children_obj.append(Data('children' + str(i),children[value],index_value_tuple=(featureIndex,value)))
             # TODO need to stash value to particular children
         return children_obj
     def splitOn(self, attributeNumber, threshold):
@@ -164,7 +168,7 @@ class Data(object):
             runningTotal = runningTotal + samp.getValueAtIndex(feature)
         return float(runningTotal) / totalN
 
-    def getSamplesOfFeature(self,featureIndex):
+    def getSamplesOfFeature(self,featureIndex): # This function is dated
         children_value = []
         children = {} # children[children_value,[sample_list]]
         for sample in self.Data:
