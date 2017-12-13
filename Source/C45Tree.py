@@ -3,7 +3,7 @@ import numpy as np
 import sys
 
 class TreeNode:
-    def __init__(self, dataSet, featureList, parent=None):
+    def __init__(self, dataSet, featureList, parent=None,F = None):
         self.featureNumber = None  #This is the trained index of the feature to split on
         self.dataSet = dataSet
         self.featureList = featureList
@@ -15,21 +15,20 @@ class TreeNode:
         self.threshold = None     #This is the trained threshold of the feature to split on
         self.leftChild = None  # left and right child is used for continuous attributes
         self.rightChild = None
-
-
+        self.F = F
 
     def c45Train(self):
-        print('***************','\n')
+        #print('***************','\n')
         if(self.dataSet.isPure()):
             label = self.dataSet.getSamples()[0].getLabel()
             leaf = LeafNode(label)
-            print("this node is Pure: ",label)
+            # print("this node is Pure: ",label)
             return leaf
         if len(self.featureList) == 0:  # TODO It Seems never get there
             labels = self.dataSet.getNumOfInstanceForLabel()
             bestLabel = None
             counts = 0
-            print('there are no more features in the feature list')
+            # print('there are no more features in the feature list')
             for key in labels: # TODO labes are dictionaries, there may be sth incorrect
                 print(key)
                 if labels[key] > counts:
@@ -43,32 +42,35 @@ class TreeNode:
         currentLength = self.dataSet.getDataLength() # instance size
 
         #TODO F will be a parameter for randome forest
-        Fvalue = int(np.ceil(np.sqrt(len(self.featureList))))
-        Fvalue = len(self.featureList)
+        if self.F == None:
+            Fvalue = int(np.ceil(np.sqrt(len(self.featureList))))
+            Fvalue = len(self.featureList)
+        else:
+            Fvalue = min([self.F,len(self.featureList)]) # To avoid the give F is too large
 
         featureSubset = random.sample(self.featureList, Fvalue)
-        print("featureSubset: ",featureSubset)
+        #print("featureSubset: ",featureSubset)
         maxGain = -1 * float("inf")
         H = self.dataSet.getEntropy()
         Goodchildren_dataSet = []
         for featureIndex in featureSubset:
             newEntropy = 0
             childrenList_dataSet = self.dataSet.splitBy(featureIndex)
-            print("childrenList_dataSet: ",featureIndex,len(childrenList_dataSet))
+         #   print("childrenList_dataSet: ",featureIndex,len(childrenList_dataSet))
 
             for child in childrenList_dataSet:
                newEntropy = newEntropy + (child.getDataLength()/currentLength)*child.getEntropy()
             Gain = H - newEntropy
             # TODO Gain/splitInfo
-            print("Gain:",Gain)
+          #  print("Gain:",Gain)
             if Gain > maxGain:
                 maxGain = Gain
                 bestfeatureIndex = featureIndex
                 Goodchildren_dataSet = childrenList_dataSet
-        print("bestfeatureIndex",bestfeatureIndex,"Goodchildren_dataSet",Goodchildren_dataSet)
+        # print("bestfeatureIndex",bestfeatureIndex,"Goodchildren_dataSet",Goodchildren_dataSet)
 
         if len(Goodchildren_dataSet) == 0: # TODO
-            print("len(Goodchildren_dataSet) == 0")
+            #print("len(Goodchildren_dataSet) == 0")
             dic = self.dataSet.getNumOfInstanceForLabel() # TODO
             bestLabel = None
             mostTimes = 0
@@ -88,7 +90,7 @@ class TreeNode:
             #print('newFeatureList: ',newFeatureList)
 
         for child in Goodchildren_dataSet:
-            toTrain  = TreeNode(dataSet=child,featureList=newFeatureList,parent=self)
+            toTrain  = TreeNode(dataSet=child,featureList=newFeatureList,parent=self,F=self.F)
             self.AttrValue.append(child.get_index_value_tuple())
             self.children.append(toTrain.c45Train()) #dataSet, featureList,
         # for child in self.children:
@@ -105,27 +107,16 @@ class TreeNode:
         '''
         Recursivly traverse the tree to classify the sample that is passed in. 
         '''
-        print("children size: ", len(self.children))
-        # for child in self.children:
-        #     if child.getCategory() == 'leaf':
-        #         print("Got leaf")
-        #         return child.classify(sample)
-        #     else:
-        #         tuple_ = child.getCategory()  # get_index_value_tuple
-        #         index = self.featureNumber
-        #         value =
-        #         if sample.getValueAtIndex(index=index) == value:
-        #             #print("match index value pair")
-        #             return child.classify(sample)
+        # print("children size: ", len(self.children))
         match = False
         for i in range(len(self.children)):
             if self.children[i].getAttrValue() == 'leaf':
-                print("Got leaf")
+                # print("Got leaf")
                 return self.children[i].classify(sample)
             else:
                 index = self.featureNumber
                 value = self.AttrValue[i][1]
-                print("Not leaf,index and value",index,len(self.children),value)
+                # print("Not leaf,index and value",index,len(self.children),value)
                 if sample.getValueAtIndex(index=index) == value:
                     #print("match index value pair")
                     match = True
@@ -157,21 +148,22 @@ class LeafNode:
     def classify(self, sample):
         #A leaf node simply is a classification, return that
         #This is the base case of the classify recursive function for TreeNodes
-        print("Got leaf: ",self.classification)
+        #print("Got leaf: ",self.classification)
         return self.classification
 
 
 class C45Tree(object):
 
-    def __init__(self, data):
+    def __init__(self, data,F = None):
         self.rootNode = None
         self.data = data
+        self.F = F
 
     def train(self):
 
         length = self.data.getFeatureLength()
         featureIndices = range(length)
-        self.rootNode = TreeNode(self.data, featureIndices)
+        self.rootNode = TreeNode(self.data, featureIndices,F=self.F)
         self.rootNode.c45Train()
 
     def classify(self, sample):

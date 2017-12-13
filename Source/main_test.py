@@ -18,7 +18,7 @@ test_data = Data(test_data)
 train_data.addSampleFromDf()
 test_data.addSampleFromDf()
 
-Tree = C45Tree(train_data)
+Tree = C45Tree(train_data,1)
 print("===Train===")
 Tree.train()
 print("===Done===")
