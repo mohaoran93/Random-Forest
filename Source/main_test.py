@@ -4,9 +4,9 @@ import pandas as pd
 import numpy as np
 
 # Split data set
-df = pd.read_csv('./Data/car.csv')
+# df = pd.read_csv('./Data/car.csv')
 # df = pd.read_csv('./Data/tic-tac-toe.csv')
-# df = pd.read_csv('./Data/kr-vs-kp.csv')
+df = pd.read_csv('./Data/kr-vs-kp.csv')
 msk = np.random.rand(len(df)) < 0.8
 train_data = df[msk]
 test_data = df[~msk]
@@ -28,7 +28,7 @@ print("\n,Test")
 T = 0
 F = 0
 for sample in test_data.getSamples():
-    #if sample.getLabel() != 'unacc':
+    # if sample.getLabel() != 'unacc':
     print("_Start_")
     classified = Tree.classify(sample)
     print("Compare: ",sample.getLabel(), classified)

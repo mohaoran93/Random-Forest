@@ -117,6 +117,7 @@ class TreeNode:
         #         if sample.getValueAtIndex(index=index) == value:
         #             #print("match index value pair")
         #             return child.classify(sample)
+        match = False
         for i in range(len(self.children)):
             if self.children[i].getAttrValue() == 'leaf':
                 print("Got leaf")
@@ -124,11 +125,13 @@ class TreeNode:
             else:
                 index = self.featureNumber
                 value = self.AttrValue[i][1]
-                print("Not leaf,index and value",index,value)
+                print("Not leaf,index and value",index,len(self.children),value)
                 if sample.getValueAtIndex(index=index) == value:
                     #print("match index value pair")
+                    match = True
                     return self.children[i].classify(sample)
-
+        if match == False:
+            return self.children[i].classify(sample)
     def getAttrValue(self):
         return self.AttrValue
 
