@@ -1,6 +1,5 @@
 import random
 import numpy as np
-import sys
 
 class TreeNode:
     def __init__(self, dataSet, featureList,roughValue = 1,parent=None,F = None,value = None):
@@ -18,37 +17,17 @@ class TreeNode:
 
     def c45Train(self,index_value=None):
         PP = self.dataSet.PurePercentage()
-        # if self.dataSet.isPure():
-        #     label = self.dataSet.getSamples()[0].getLabel()
-        #     leaf = LeafNode(label,value=index_value[1])#TODO ,value=self.dataSet.getSamples()[0].getValueAtIndex()
-        #     return leaf
-
         roughValue = self.roughValue
         roughValue = max([roughValue,0.75])
         if PP[1] >= roughValue:
-            #print("PurePercentage",roughValue)
             label = self.dataSet.getSamples()[0].getLabel()
             leaf = LeafNode(label,value=index_value[1])
             leaf = LeafNode(PP[0],value=index_value[1])
             return leaf
 
-        # if len(self.featureList) == 0:  # TODO It Seems never get there
-        #     print("Never")
-        #     labels = self.dataSet.getNumOfInstanceForLabel()
-        #     bestLabel = None
-        #     counts = 0
-        #     for key in labels: # TODO labes are dictionaries, there may be sth incorrect
-        #         print(key)
-        #         if labels[key] > counts:
-        #             bestLabel = key
-        #             counts = labels[key]
-        #     leaf = LeafNode(bestLabel)
-        #     return leaf
-
         currentLength = self.dataSet.getDataLength() # instance size
 
         if self.F == None:
-            #Fvalue = int(np.ceil(np.sqrt(len(self.featureList))))
             Fvalue = len(self.featureList)
         else:
             Fvalue = min([self.F,len(self.featureList)]) # To avoid the give F is too large
@@ -77,8 +56,6 @@ class TreeNode:
                 maxGain = Gain
                 bestfeatureIndex = featureIndex
                 Goodchildren_dataSet = childrenList_dataSet
-        # print('maxGain,H',maxGain,H)
-        # print('Goodchildren_dataSet',len(Goodchildren_dataSet))
         if len(Goodchildren_dataSet) == 0: # TODO it was 0
             # print("Never")
             dic = self.dataSet.getNumOfInstanceForLabel() # TODO
@@ -115,28 +92,12 @@ class TreeNode:
             if child.getValue() ==value:#in [value,'leaf']:
                 return child.classify(sample)
         # print("wrong!",value,self.featureNumber)
-
-        # match = False
-        # for i in range(len(self.children)):
-        #     if self.children[i].getAttrValue() == 'leaf':
-        #         print("Got leaf")
-        #         return self.children[i].classify(sample)
-        #     else:
-        #         print("HAHA",self.children[i].getAttrValue())
-        #         index = self.featureNumber
-        #         value = self.AttrValue[i][1]
-        #         # print("Not leaf,index and value",index,len(self.children),value)
-        #         if sample.getValueAtIndex(index=index) == value:
-        #             #print("match index value pair")
-        #             match = True
-        #             return self.children[i].classify(sample)
-        # if match == False:
-        #     return self.children[i].classify(sample)
     def getAttrValue(self):
         return self.AttrValue
     def getValue(self):
         return self.value
-
+    def getfeatureNumber(self):
+        return self.featureNumber
     def setCategory(self,category):
         self.AttrValue = category
 
@@ -170,14 +131,16 @@ class C45Tree(object):
         self.rootNode = None
         self.data = data
         self.F = F
+        self.FL = {}
 
     def train(self):
-
         length = self.data.getFeatureLength()
         featureIndices = range(length)
         self.rootNode = TreeNode(self.data, featureIndices,F=self.F,value=None)
         self.rootNode.c45Train()
 
+    def getfeatureNumber(self):
+        print(self.rootNode.getfeatureNumber())
     def classify(self, sample):
         '''
         Classify a sample based off of this trained tree.

@@ -8,6 +8,7 @@ class RandomForest:
         self.NT = NT
         self.roughValue = roughValue
         self.Trees = []
+        self.Features = {} # order features according to their importance
     def train(self):
         for i in range(self.NT):
             tree = C45Tree(self.Data,F=self.F,roughValue = self.roughValue)
@@ -15,7 +16,6 @@ class RandomForest:
             self.Trees.append(tree)
         return self
     def classify(self,testData):
-        print("NT:",len(self.Trees))
         T = 0
         F = 0
         for sample in testData.getSamples():
@@ -33,5 +33,6 @@ class RandomForest:
             else:
                 F += 1
         acc = T/(T+F)
-        print("acc:",acc)
-               # print(tree.classify(sample))
+        return acc
+    def get_FeaturesList(self):
+        return self.Features
