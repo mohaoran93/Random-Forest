@@ -6,8 +6,9 @@ import numpy as np
 
 # Split data set
 # df = pd.read_csv('../Data/car.csv')
+df = pd.read_csv('../Data/connect-4.csv')
 # df = pd.read_csv('../Data/tic-tac-toe.csv')
-df = pd.read_csv('../Data/kr-vs-kp.csv')
+# df = pd.read_csv('../Data/kr-vs-kp.csv')
 msk = np.random.rand(len(df)) < 0.8
 train_data = df[msk]
 test_data = df[~msk]

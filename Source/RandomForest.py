@@ -2,14 +2,15 @@ from Source.C45Tree import *
 
 
 class RandomForest:
-    def __init__(self,data,F,NT):
+    def __init__(self,data,F,NT,roughValue = 1):
         self.Data = data
         self.F = F
         self.NT = NT
+        self.roughValue = roughValue
         self.Trees = []
     def train(self):
         for i in range(self.NT):
-            tree = C45Tree(self.Data,F=self.F)
+            tree = C45Tree(self.Data,F=self.F,roughValue = self.roughValue)
             tree.train()
             self.Trees.append(tree)
         return self

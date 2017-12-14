@@ -15,10 +15,10 @@ class sample(object):
     def setLable(self,lable):
         self.lable = lable
 
-    def splitLeft(self, attributeNumber, threshold):
-        if self.features[attributeNumber] <= threshold:
-            return True
-        return False
+    # def splitLeft(self, attributeNumber, threshold):
+    #     if self.features[attributeNumber] <= threshold:
+    #         return True
+    #     return False
     def getValueAtIndex(self,index):
         return self.features[index]
     def getLabel(self):
@@ -68,7 +68,24 @@ class Data(object):
             self.Data.append(sample_)
 
     def isPure(self):
-        return self.count() <= 1
+        count = 0
+        standard = self.Data[0].getLabel()
+        for s in self.Data:
+            if s.getLabel() == standard:
+                count = count+1
+        print(count,len(self.Data))
+        return count == len(self.Data)
+
+    def PurePercentage(self):
+        labes = {}
+        for sample in self.Data:
+            if sample.getLabel() not in labes.keys():
+                labes[sample.getLabel()] = 1
+            else:
+                labes[sample.getLabel()] +=1
+        popular_Label = max(labes,key=labes.get)
+        num = labes[popular_Label]
+        return (popular_Label,num/len(self.Data))
     def get_index_value_tuple(self):
         return self.index_value_tuple
     def getFirstSample(self):
@@ -99,26 +116,18 @@ class Data(object):
                 count = count+1
         return count
     def getEntropy(self):
-        '''
-        Returns a numerical quantity of the entropy for this
-        data set.
-        '''
 
-        if self.entropy is not None:
-            return self.entropy
+        # if self.entropy is not None:
+        #     return self.entropy
 
         dic = self.getNumOfInstanceForLabel()
-        #assuming all the data is labeled
         total = len(self.Data)
         entropy = 0.0
-        for label in dic:
-            #Calculate the probability of the key
+        for label in dic.keys():  # TODO dic.keys()
             pOfclass = float(dic[label]) / float(total)
-            #Calculate the entropy for this key and add it to the running sum
             if pOfclass != 0:
-                entropy = entropy + -1 * pOfclass * np.log2(pOfclass)
-
-        self.entropy = entropy
+                entropy += pOfclass * np.log2(pOfclass)
+        self.entropy = -entropy
         return self.entropy
 
     def splitBy(self, featureIndex):

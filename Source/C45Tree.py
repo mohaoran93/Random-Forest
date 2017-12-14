@@ -3,98 +3,104 @@ import numpy as np
 import sys
 
 class TreeNode:
-    def __init__(self, dataSet, featureList, parent=None,F = None):
+    def __init__(self, dataSet, featureList,roughValue = 1,parent=None,F = None,value = None):
         self.featureNumber = None  #This is the trained index of the feature to split on
         self.dataSet = dataSet
         self.featureList = featureList
 
+        self.value = value # value of Particular attribute
         self.AttrValue = [] # (featureNumber,value) categories are corresponding to threshold
         self.children = [] # the list of TreeNodes
         self.parent = parent
 
-        self.threshold = None     #This is the trained threshold of the feature to split on
-        self.leftChild = None  # left and right child is used for continuous attributes
-        self.rightChild = None
         self.F = F
+        self.roughValue = roughValue
 
-    def c45Train(self):
-        #print('***************','\n')
-        if(self.dataSet.isPure()):
+    def c45Train(self,index_value=None):
+        PP = self.dataSet.PurePercentage()
+        # if self.dataSet.isPure():
+        #     label = self.dataSet.getSamples()[0].getLabel()
+        #     leaf = LeafNode(label,value=index_value[1])#TODO ,value=self.dataSet.getSamples()[0].getValueAtIndex()
+        #     return leaf
+
+        roughValue = self.roughValue
+        roughValue = max([roughValue,0.75])
+        if PP[1] >= roughValue:
+            #print("PurePercentage",roughValue)
             label = self.dataSet.getSamples()[0].getLabel()
-            leaf = LeafNode(label)
-            # print("this node is Pure: ",label)
-            return leaf
-        if len(self.featureList) == 0:  # TODO It Seems never get there
-            labels = self.dataSet.getNumOfInstanceForLabel()
-            bestLabel = None
-            counts = 0
-            # print('there are no more features in the feature list')
-            for key in labels: # TODO labes are dictionaries, there may be sth incorrect
-                print(key)
-                if labels[key] > counts:
-                    bestLabel = key
-                    counts = labels[key]
-            #Make the leaf node with the label with largest size
-            leaf = LeafNode(bestLabel)
+            leaf = LeafNode(label,value=index_value[1])
+            leaf = LeafNode(PP[0],value=index_value[1])
             return leaf
 
-        #currentEntropy = self.dataSet.getEntropy()  # done
+        # if len(self.featureList) == 0:  # TODO It Seems never get there
+        #     print("Never")
+        #     labels = self.dataSet.getNumOfInstanceForLabel()
+        #     bestLabel = None
+        #     counts = 0
+        #     for key in labels: # TODO labes are dictionaries, there may be sth incorrect
+        #         print(key)
+        #         if labels[key] > counts:
+        #             bestLabel = key
+        #             counts = labels[key]
+        #     leaf = LeafNode(bestLabel)
+        #     return leaf
+
         currentLength = self.dataSet.getDataLength() # instance size
 
-        #TODO F will be a parameter for randome forest
         if self.F == None:
-            Fvalue = int(np.ceil(np.sqrt(len(self.featureList))))
+            #Fvalue = int(np.ceil(np.sqrt(len(self.featureList))))
             Fvalue = len(self.featureList)
         else:
             Fvalue = min([self.F,len(self.featureList)]) # To avoid the give F is too large
-
         featureSubset = random.sample(self.featureList, Fvalue)
-        #print("featureSubset: ",featureSubset)
         maxGain = -1 * float("inf")
         H = self.dataSet.getEntropy()
         Goodchildren_dataSet = []
         for featureIndex in featureSubset:
             newEntropy = 0
+            splitInfo = 0
             childrenList_dataSet = self.dataSet.splitBy(featureIndex)
-         #   print("childrenList_dataSet: ",featureIndex,len(childrenList_dataSet))
-
             for child in childrenList_dataSet:
-               newEntropy = newEntropy + (child.getDataLength()/currentLength)*child.getEntropy()
+               PvalueOfA = child.getDataLength()/currentLength
+               newEntropy = newEntropy + (PvalueOfA)*child.getEntropy()
+               if PvalueOfA != 0:
+                   splitInfo = splitInfo + (PvalueOfA)*np.log2(PvalueOfA)
             Gain = H - newEntropy
+            if splitInfo == 0:
+                Gain = 0 # TODO what is wrong?
+            else:
+                Gain = Gain/(-splitInfo)
+            # if splitInfo == 0:
+            #     print('splitInfo is 0, and Gain is ',Gain,len(childrenList_dataSet))
             # TODO Gain/splitInfo
-          #  print("Gain:",Gain)
             if Gain > maxGain:
                 maxGain = Gain
                 bestfeatureIndex = featureIndex
                 Goodchildren_dataSet = childrenList_dataSet
-        # print("bestfeatureIndex",bestfeatureIndex,"Goodchildren_dataSet",Goodchildren_dataSet)
-
-        if len(Goodchildren_dataSet) == 0: # TODO
-            #print("len(Goodchildren_dataSet) == 0")
+        # print('maxGain,H',maxGain,H)
+        # print('Goodchildren_dataSet',len(Goodchildren_dataSet))
+        if len(Goodchildren_dataSet) == 0: # TODO it was 0
+            # print("Never")
             dic = self.dataSet.getNumOfInstanceForLabel() # TODO
             bestLabel = None
             mostTimes = 0
 
             for label_ in dic:
-                print("leaf, key:", label_)
+                # print("leaf, key:", label_)
                 if dic[label_] > mostTimes:
                     bestLabel = label_
                     mostTimes = dic[label_]
-            #Make the leaf node with the best label
             leaf = LeafNode(bestLabel)
             return leaf
         else:
             newFeatureList = list(self.featureList)
             newFeatureList.remove(bestfeatureIndex)
             self.featureNumber = bestfeatureIndex
-            #print('newFeatureList: ',newFeatureList)
 
         for child in Goodchildren_dataSet:
-            toTrain  = TreeNode(dataSet=child,featureList=newFeatureList,parent=self,F=self.F)
+            toTrain  = TreeNode(dataSet=child,featureList=newFeatureList,parent=self,F=self.F,value=child.get_index_value_tuple()[1])
             self.AttrValue.append(child.get_index_value_tuple())
-            self.children.append(toTrain.c45Train()) #dataSet, featureList,
-        # for child in self.children:
-        #     child.c45Train()
+            self.children.append(toTrain.c45Train(index_value=child.get_index_value_tuple())) #dataSet, featureList,
         return self
         
     def __str__(self):
@@ -104,27 +110,32 @@ class TreeNode:
         return self.__str__()
                 
     def classify(self, sample):
-        '''
-        Recursivly traverse the tree to classify the sample that is passed in. 
-        '''
-        # print("children size: ", len(self.children))
-        match = False
-        for i in range(len(self.children)):
-            if self.children[i].getAttrValue() == 'leaf':
-                # print("Got leaf")
-                return self.children[i].classify(sample)
-            else:
-                index = self.featureNumber
-                value = self.AttrValue[i][1]
-                # print("Not leaf,index and value",index,len(self.children),value)
-                if sample.getValueAtIndex(index=index) == value:
-                    #print("match index value pair")
-                    match = True
-                    return self.children[i].classify(sample)
-        if match == False:
-            return self.children[i].classify(sample)
+        value = sample.getValueAtIndex(self.featureNumber)
+        for child in self.children:
+            if child.getValue() ==value:#in [value,'leaf']:
+                return child.classify(sample)
+        # print("wrong!",value,self.featureNumber)
+
+        # match = False
+        # for i in range(len(self.children)):
+        #     if self.children[i].getAttrValue() == 'leaf':
+        #         print("Got leaf")
+        #         return self.children[i].classify(sample)
+        #     else:
+        #         print("HAHA",self.children[i].getAttrValue())
+        #         index = self.featureNumber
+        #         value = self.AttrValue[i][1]
+        #         # print("Not leaf,index and value",index,len(self.children),value)
+        #         if sample.getValueAtIndex(index=index) == value:
+        #             #print("match index value pair")
+        #             match = True
+        #             return self.children[i].classify(sample)
+        # if match == False:
+        #     return self.children[i].classify(sample)
     def getAttrValue(self):
         return self.AttrValue
+    def getValue(self):
+        return self.value
 
     def setCategory(self,category):
         self.AttrValue = category
@@ -139,22 +150,23 @@ class LeafNode:
     and is used to cap off a tree.
     '''
 
-    def __init__(self, classification):
+    def __init__(self, classification,value=None): # even leaf node needs the value of particular attribute
         self.classification = classification
-
+        self.value = value
     def getAttrValue(self):
         return 'leaf'
+    def getValue(self):
+        return self.value
+        # return 'leaf'
 
     def classify(self, sample):
-        #A leaf node simply is a classification, return that
-        #This is the base case of the classify recursive function for TreeNodes
-        #print("Got leaf: ",self.classification)
         return self.classification
 
 
 class C45Tree(object):
 
-    def __init__(self, data,F = None):
+    def __init__(self, data,F = None,roughValue = 1):
+        self.roughValue = roughValue
         self.rootNode = None
         self.data = data
         self.F = F
@@ -163,7 +175,7 @@ class C45Tree(object):
 
         length = self.data.getFeatureLength()
         featureIndices = range(length)
-        self.rootNode = TreeNode(self.data, featureIndices,F=self.F)
+        self.rootNode = TreeNode(self.data, featureIndices,F=self.F,value=None)
         self.rootNode.c45Train()
 
     def classify(self, sample):
